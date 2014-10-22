@@ -6,10 +6,13 @@ output:
 ---
 
 
+This is my 'Hello World' Mardown - coincidentally it is also the first Peer Assessment of the Reproducible Research course of Coursera's Data Science Specialization 
+
 ## Loading and preprocessing the data
 
-
-
+```{r dataload, echo=TRUE}
+data <- read.table(unz("activity.zip", "activity.csv"), header = TRUE, sep=",")
+```
 ## What is mean total number of steps taken per day?
 
 
