@@ -18,20 +18,17 @@ data$date <- as.Date(data$date, format = "%Y-%m-%d")
 ## What is mean total number of steps taken per day?
 
 
-
 ```{r libraryload, message=F, warning=F, echo=T}
 library(dplyr)
 library(ggplot2)
+library(gridExtra)
 data2 <- data[complete.cases(data),]
 data2 <- group_by(data2, date)
 dailysteps <- summarize(data2, total = sum(steps))
-plot1 <- qplot(total, data = dailysteps) 
-      + geom_histogram(fill = "steelblue")
-      + labs(x = "Total number of steps taken each day", y = "Frequency", title = "Daily Total Steps Histogram")
+plot1 <- qplot(total, data = dailysteps) + geom_histogram(fill = "steelblue") + labs(x = "Total number of steps taken each day", y = "Frequency", title = "Daily Total Steps Histogram")
 plot1
 summary(dailysteps$total)
-plot1 + geom_vline(aes(xintercept = mean(dailysteps$total)), colour = "red", size = 1) 
-      + geom_vline(aes(xintercept = median(dailysteps$total)), colour = "blue", size = 1, alpha = .5)
+plot1_annotations <- plot1 + geom_vline(aes(xintercept = mean(dailysteps$total)), colour = "red", size = 1) + geom_vline(aes(xintercept = median(dailysteps$total)), colour = "blue", size = 1, alpha = .5) + labs(title ="Part 1 - excluding NAs")
 ```
 
 ## What is the average daily activity pattern?
@@ -40,8 +37,7 @@ plot1 + geom_vline(aes(xintercept = mean(dailysteps$total)), colour = "red", siz
 data3 <- group_by(data2,interval)
 avgsteps <- summarize(data3, avg = mean(steps))
 g <- ggplot(avgsteps,aes(x = interval, y = avg))
-plot2 <- g + geom_line(size = 1, colour = "steelblue") 
-          + labs(x = "Time interval [every 5 mins]", y = "Avg Steps", title = "Daily Avg of Steps taken by Interval")
+plot2 <- g + geom_line(size = 1, colour = "steelblue") + labs(x = "Time interval [every 5 mins]", y = "Avg Steps", title = "Daily Avg of Steps taken by Interval")
 plot2
 max_step_interval <- avgsteps[avgsteps$avg==max(avgsteps$avg),]
 max_step_interval
@@ -50,8 +46,50 @@ plot2 + geom_vline(aes(xintercept = max_step_interval$interval), colour = "red",
 
 ## Imputing missing values
 
+If we replace NAs with the mean value obtained in part 1 we will get:
 ```{r missingvalues, message=F, warning=F, echo=T}
 missing <- count(data[complete.cases(data)==FALSE,])
 missing
+newdata <- data
+newdata["steps"][is.na(newdata["steps"])] <- mean(data2$steps)
+newdata2 <- group_by(newdata, date)
+dailysteps2 <- summarize(newdata2, total = sum(steps))
+plot3 <- qplot(total, data = dailysteps2) + geom_histogram(fill = "steelblue") + labs(x = "Total number of steps taken each day", y = "Frequency", title = "Daily Total Steps Histogram")
+plot3
+summary(dailysteps2$total)
+plot3_annotations <- plot3 + geom_vline(aes(xintercept = mean(dailysteps2$total)), colour = "red", size = 1) + geom_vline(aes(xintercept = median(dailysteps2$total)), colour = "blue", size = 1, alpha = .5) + labs(title ="Part 2 - NAs = daily mean")
+
+library(gridExtra)
+grid.arrange(plot1_annotations,plot3_annotations, nrow = 2, main = "Daily Total Steps Histogram Comparison")
 ```
+
+If we use the meadian instead the results are different:
+
+```{r medianmissing, message=F, warning=F, echo=T}
+newdata_median <- data
+newdata_median["steps"][is.na(newdata_median["steps"])] <- median(data2$steps)
+newdata_median2 <- group_by(newdata_median, date)
+dailysteps3 <- summarize(newdata_median2, total = sum(steps))
+plot4 <- qplot(total, data = dailysteps3) + geom_histogram(fill = "steelblue") + labs(x = "Total number of steps taken each day", y = "Frequency", title = "Daily Total Steps Histogram")
+plot4_annotations <- plot4 + geom_vline(aes(xintercept = mean(dailysteps3$total)), colour = "red", size = 1) + geom_vline(aes(xintercept = median(dailysteps3$total)), colour = "blue", size = 1, alpha = .5) + labs(title ="Part 2 - NAs = daily median")
+grid.arrange(plot3_annotations,plot4_annotations, nrow = 2, main = "NA replacement methods comparison")
+```
+
+
+
 ## Are there differences in activity patterns between weekdays and weekends?
+
+As the mean seemed to have less impact in the histogram distribution we are going to continue the assessment replacing NAs in the original data with the mean.
+
+
+
+```{r weekdays, message=F, warning=F, echo=TRUE}
+data_day <- mutate(newdata, day = weekdays(date, abbreviate = TRUE))
+weekday <- c("Mon","Tue","Wed","Thu","Fri")
+weekend <- c("Sat","Sun")
+day_weekend <- filter(data_day, day == weekend) %>% group_by(interval) %>% summarize(total_steps = mean(steps)) %>% mutate(week = c("weekend"))
+day_weekday <- filter(data_day, day == weekday) %>% group_by(interval) %>% summarize(total_steps = mean(steps)) %>% mutate(week = c("weekday"))
+day_data <- rbind(day_weekday,day_weekend)
+g<-ggplot(data = day_data, aes(interval,total_steps))
+g + geom_line(colour = "steelblue") + facet_grid(week~.) + labs(x = "Interval", y = "Number of Steps [avg]", main = "Average Steps per time interval (grouped by weekday/weekend)" )
+```
