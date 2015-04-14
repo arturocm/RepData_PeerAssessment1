@@ -25,25 +25,33 @@ library(ggplot2)
 data2 <- data[complete.cases(data),]
 data2 <- group_by(data2, date)
 dailysteps <- summarize(data2, total = sum(steps))
-plot1 <- qplot(total, data = dailysteps) + geom_histogram(fill = "steelblue")+ labs(x = "Total number of steps taken each day", y = "Frequency", title = "Daily Total Steps Histogram")
+plot1 <- qplot(total, data = dailysteps) 
+      + geom_histogram(fill = "steelblue")
+      + labs(x = "Total number of steps taken each day", y = "Frequency", title = "Daily Total Steps Histogram")
 plot1
 summary(dailysteps$total)
-plot1 + geom_vline(aes(xintercept = mean(dailysteps$total)), colour = "red", size = 1) + geom_vline(aes(xintercept = median(dailysteps$total)), colour = "blue", size = 1, alpha = .5)
+plot1 + geom_vline(aes(xintercept = mean(dailysteps$total)), colour = "red", size = 1) 
+      + geom_vline(aes(xintercept = median(dailysteps$total)), colour = "blue", size = 1, alpha = .5)
 ```
 
 ## What is the average daily activity pattern?
 
-```{r dailyplot, echo=TRUE}
+```{r dailyplot, message=F, warning=F, echo=T}
 data3 <- group_by(data2,interval)
 avgsteps <- summarize(data3, avg = mean(steps))
 g <- ggplot(avgsteps,aes(x = interval, y = avg))
-g + geom_line(size = 1, colour = "steelblue") + labs(x = "Time interval [5 mins]", y = "Average Steps", title = "Daily Average of Steps taken by Interval")
-avgsteps[avgsteps$avg==max(avgsteps$avg),]
+plot2 <- g + geom_line(size = 1, colour = "steelblue") 
+          + labs(x = "Time interval [every 5 mins]", y = "Avg Steps", title = "Daily Avg of Steps taken by Interval")
+plot2
+max_step_interval <- avgsteps[avgsteps$avg==max(avgsteps$avg),]
+max_step_interval
+plot2 + geom_vline(aes(xintercept = max_step_interval$interval), colour = "red", size = 1, alpha = .2)
 ```
-
 
 ## Imputing missing values
 
-
-
+```{r missingvalues, message=F, warning=F, echo=T}
+missing <- count(data[complete.cases(data)==FALSE,])
+missing
+```
 ## Are there differences in activity patterns between weekdays and weekends?
